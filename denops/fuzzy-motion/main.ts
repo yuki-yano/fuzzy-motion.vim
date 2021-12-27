@@ -219,6 +219,7 @@ export const main = async (denops: Denops): Promise<void> => {
             const target = targets.find((target) => target.char === targetChar);
 
             if (target != null) {
+              await execute(denops, "normal! m`");
               await denops.call("cursor", target.pos.line, target.pos.col);
               break;
             }
