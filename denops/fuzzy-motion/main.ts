@@ -291,6 +291,9 @@ export const main = async (denops: Denops): Promise<void> => {
         }));
 
         await removeExtMarks(denops, namespace);
+
+        await execute(denops, `echo ''`);
+        await execute(denops, `redraw`);
       }
     },
   };
