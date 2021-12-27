@@ -28,6 +28,7 @@ type Extmark = [number, number, number, { virt_text: Array<[string, string]> }];
 
 const ESC = 27;
 const BS = 128;
+const C_H = 8
 const TARGET_LENGTH = 26;
 
 let input = "";
@@ -219,11 +220,12 @@ export const main = async (denops: Denops): Promise<void> => {
               await denops.call("cursor", target.pos.line, target.pos.col);
               break;
             }
-          } else if (code === BS) {
+          } else if (code === BS || code === C_H) {
             await removeExtMarks(denops, namespace);
 
             input = input.slice(0, -1);
             await execute(denops, `echo 'fuzzy-motion: ${input}'`);
+            await execute(denops, `redraw`);
             if (input === "") {
               continue;
             }
