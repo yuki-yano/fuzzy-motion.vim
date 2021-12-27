@@ -8,7 +8,7 @@ import {
   isString,
 } from "https://deno.land/x/unknownutil@v1.1.4/mod.ts";
 
-type Mode = "prev" | "next";
+type Mode = "prev" | "next" | "all";
 
 type WordPos = {
   line: number;
@@ -35,7 +35,7 @@ let input = "";
 const getStartAndEndLine = async (denops: Denops, mode: Mode) => {
   const startLine = await denops.call(
     "line",
-    mode === "prev" ? "w0" : ".",
+    mode === "next" ? "." : "w0",
   ) as number;
   const endLine = await denops.call(
     "line",
@@ -132,6 +132,7 @@ export const main = async (denops: Denops): Promise<void> => {
   await helper.execute(
     denops,
     `
+    command! FuzzyMotion     call denops#request("${denops.name}", "execute", ['all'])
     command! FuzzyMotionNext call denops#request("${denops.name}", "execute", ['next'])
     command! FuzzyMotionPrev call denops#request("${denops.name}", "execute", ['prev'])
     `,
@@ -139,7 +140,10 @@ export const main = async (denops: Denops): Promise<void> => {
 
   denops.dispatcher = {
     execute: async (mode: unknown): Promise<void> => {
-      if (!isString(mode) || (mode !== "prev" && mode !== "next")) {
+      if (
+        !isString(mode) ||
+        (mode !== "prev" && mode !== "next" && mode !== "all")
+      ) {
         return;
       }
 
@@ -168,7 +172,7 @@ export const main = async (denops: Denops): Promise<void> => {
       ];
 
       const lineNumbers = [...Array(endLine - startLine)].map((_, i) =>
-        i + startLine + (mode === "prev" ? 0 : 1)
+        i + startLine + (mode === "prev" || mode === "all" ? 0 : 1)
       );
       matchIds = [
         ...matchIds,
