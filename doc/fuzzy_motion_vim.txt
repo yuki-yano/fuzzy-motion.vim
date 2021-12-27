@@ -6,6 +6,12 @@ Fuzzy search for words, assign labels in the order of highest score,
 and move the cursor.
 Enter the search in lowercase and the jump in uppercase.
 
+This plugin works with Neovim and depends on denops.vim.
+
+- denops.vim
+    https://github.com/vim-denops/denops.vim
+
+
 Author:  yuki-yano
 License: MIT
 
