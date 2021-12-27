@@ -269,7 +269,7 @@ export const main = async (denops: Denops): Promise<void> => {
           }
         }
       } catch (err) {
-        throw err;
+        console.error(err);
       } finally {
         await Promise.all(matchIds.map((id) => {
           denops.call("matchdelete", id);
