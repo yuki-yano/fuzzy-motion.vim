@@ -207,10 +207,10 @@ export const main = async (denops: Denops): Promise<void> => {
       });
 
       try {
-        while (true) {
-          await execute(denops, `echo 'fuzzy-motion: ${input}'`);
-          await execute(denops, `redraw`);
+        await execute(denops, `echo 'fuzzy-motion: ${input}'`);
+        await execute(denops, `redraw`);
 
+        while (true) {
           let code: number;
           if (!useDefaultInput) {
             code = await denops.call("getchar") as number;
