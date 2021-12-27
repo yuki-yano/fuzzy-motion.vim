@@ -1,0 +1,38 @@
+*fuzzy-motion-vim.txt*
+
+Jump to fuzzy match word plugin
+
+Fuzzy search for words, assign labels in the order of highest score,
+and move the cursor.
+Enter the search in lowercase and the jump in uppercase.
+
+Author:  yuki-yano
+License: MIT
+
+==============================================================================
+COMMANDS                                        *fuzzy-motion-commands*
+
+                                                *:FuzzyMotion*
+:FuzzyMotion
+    Fuzzy search the entire window for a word and move the cursor over it.
+
+                                                *:FuzzyMotionPrev*
+:FuzzyMotionPrev
+    Fuzzy search for words in the position below the cursor and
+    move the cursor over them.
+
+                                                *:FuzzyMotionNext*
+:FuzzyMotionNext
+    Fuzzy search for words in the position above the cursor and
+    move the cursor over them.
+
+==============================================================================
+HIGHLIGHT                                       *fuzzy-motion-highlight*
+
+*FuzzyMotionShade*
+    This is the highlight that will be applied to the search target range
+    when the command is executed
+
+*FuzzyMotionChar*
+    This is the highlight of the label to be displayed at the beginning of
+    the matched words during the search.
