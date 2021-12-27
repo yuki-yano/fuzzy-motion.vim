@@ -60,7 +60,7 @@ const getWords = async (
     endLine,
   ) as ReadonlyArray<string>;
 
-  const regexp = new RegExp("[a-zA-Z_-]+", "gu");
+  const regexp = new RegExp("[0-9a-zA-Z_-]+", "gu");
 
   let words: ReadonlyArray<Word> = [];
   let matchArray: RegExpExecArray | null = null;
