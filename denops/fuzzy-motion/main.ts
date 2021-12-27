@@ -4,6 +4,7 @@ import * as helper from "https://deno.land/x/denops_std@v2.2.0/helper/mod.ts";
 import { Fzf } from "https://esm.sh/fzf@0.4.1";
 import {
   ensureNumber,
+  ensureString,
   isNumber,
   isString,
 } from "https://deno.land/x/unknownutil@v1.1.4/mod.ts";
@@ -28,7 +29,7 @@ type Extmark = [number, number, number, { virt_text: Array<[string, string]> }];
 
 const ESC = 27;
 const BS = 128;
-const C_H = 8
+const C_H = 8;
 const TARGET_LENGTH = 26;
 
 let input = "";
@@ -111,7 +112,7 @@ const renderExtMarks = async (
       0,
       namespace,
       target.pos.line - 1,
-      target.pos.col - 1,
+      target.pos.col - 2 >= 0 ? target.pos.col - 2 : target.pos.col - 1,
       {
         virt_text: [[
           target.char,
@@ -133,20 +134,24 @@ export const main = async (denops: Denops): Promise<void> => {
   await helper.execute(
     denops,
     `
-    command! FuzzyMotion     call denops#request("${denops.name}", "execute", ['all'])
-    command! FuzzyMotionNext call denops#request("${denops.name}", "execute", ['next'])
-    command! FuzzyMotionPrev call denops#request("${denops.name}", "execute", ['prev'])
+    command! -nargs=? FuzzyMotion     call denops#request("${denops.name}", "execute", ['all', <q-args>])
+    command! -nargs=? FuzzyMotionNext call denops#request("${denops.name}", "execute", ['next', <q-args>])
+    command! -nargs=? FuzzyMotionPrev call denops#request("${denops.name}", "execute", ['prev', <q-args>])
     `,
   );
 
   denops.dispatcher = {
-    execute: async (mode: unknown): Promise<void> => {
+    execute: async (mode: unknown, defaultInput: unknown): Promise<void> => {
+      ensureString(mode);
+      ensureString(defaultInput);
       if (
         !isString(mode) ||
         (mode !== "prev" && mode !== "next" && mode !== "all")
       ) {
         return;
       }
+
+      let useDefaultInput = defaultInput !== "";
 
       const pos = await denops.call("getpos", ".") as [
         number,
@@ -172,7 +177,11 @@ export const main = async (denops: Denops): Promise<void> => {
         ) as number,
       ];
 
-      const lineNumbers = [...Array(endLine - startLine)].map((_, i) =>
+      const lineNumbers = [
+        ...Array(
+          mode === "all" ? (endLine + startLine + 1) : (endLine - startLine),
+        ),
+      ].map((_, i) =>
         i + startLine + (mode === "prev" || mode === "all" ? 0 : 1)
       );
       matchIds = [
@@ -189,7 +198,7 @@ export const main = async (denops: Denops): Promise<void> => {
 
       await execute(denops, `redraw`);
 
-      input = "";
+      input = defaultInput;
       let targets: Array<Target> = [];
 
       const words = await getWords(denops, mode as Mode);
@@ -199,13 +208,20 @@ export const main = async (denops: Denops): Promise<void> => {
 
       try {
         while (true) {
-          let code = await denops.call("getchar");
+          let code: number;
 
-          if (code === null) {
-            code = 3;
+          if (!useDefaultInput) {
+            code = await denops.call("getchar") as number;
+            if (code == null) {
+              code = 0;
+            }
+          } else {
+            useDefaultInput = false;
+            code = 0;
           }
+
           if (!isNumber(code)) {
-            code = await denops.call("char2nr", code);
+            code = await denops.call("char2nr", code) as number;
           }
           ensureNumber(code);
 
@@ -246,11 +262,12 @@ export const main = async (denops: Denops): Promise<void> => {
           } else if (
             (code >= "a".charCodeAt(0) && code <= "z".charCodeAt(0)) ||
             (code >= "0".charCodeAt(0) && code <= "9".charCodeAt(0)) ||
-            code === "_".charCodeAt(0) || code === "-".charCodeAt(0)
+            code === "_".charCodeAt(0) || code === "-".charCodeAt(0) ||
+            defaultInput !== ""
           ) {
             await removeExtMarks(denops, namespace);
 
-            input = `${input}${String.fromCharCode(code)}`;
+            input = `${input}${code !== 0 ? String.fromCharCode(code) : ""}`;
             targets = fzf.find(input).slice(0, TARGET_LENGTH).map<Target>(
               (entry, i) => {
                 return {
