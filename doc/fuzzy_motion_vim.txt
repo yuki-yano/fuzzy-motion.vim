@@ -42,3 +42,5 @@ HIGHLIGHT                                       *fuzzy-motion-highlight*
 *FuzzyMotionChar*
     This is the highlight of the label to be displayed at the beginning of
     the matched words during the search.
+
+vim:tw=78:sw=2:ts=2:ft=help:norl:nowrap:
