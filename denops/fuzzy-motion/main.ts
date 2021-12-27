@@ -226,7 +226,7 @@ export const main = async (denops: Denops): Promise<void> => {
             await removeExtMarks(denops, namespace);
 
             input = input.slice(0, -1);
-            await execute(denops, `echo '${input}'`);
+            await execute(denops, `echo 'fuzzy-motion: ${input}'`);
             if (input === "") {
               continue;
             }
@@ -242,7 +242,7 @@ export const main = async (denops: Denops): Promise<void> => {
             );
 
             await renderExtMarks(denops, namespace, targets);
-            await execute(denops, `echo '${input}'`);
+            await execute(denops, `echo 'fuzzy-motion: ${input}'`);
             await execute(denops, `redraw`);
           } else if (
             (code >= "a".charCodeAt(0) && code <= "z".charCodeAt(0)) ||
@@ -263,7 +263,7 @@ export const main = async (denops: Denops): Promise<void> => {
             );
 
             await renderExtMarks(denops, namespace, targets);
-            await execute(denops, `echo '${input}'`);
+            await execute(denops, `echo 'fuzzy-motion: ${input}'`);
             await execute(denops, `redraw`);
           }
         }
