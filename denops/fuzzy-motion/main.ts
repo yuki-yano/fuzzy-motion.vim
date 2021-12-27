@@ -236,7 +236,7 @@ export const main = async (denops: Denops): Promise<void> => {
                 return {
                   text: entry.item.text,
                   pos: entry.item.pos,
-                  char: String.fromCharCode("a".charCodeAt(0) + i),
+                  char: String.fromCharCode("A".charCodeAt(0) + i),
                 };
               },
             );
