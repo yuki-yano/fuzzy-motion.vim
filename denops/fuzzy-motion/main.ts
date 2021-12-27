@@ -27,6 +27,7 @@ type Target = Word & {
 
 type Extmark = [number, number, number, { virt_text: Array<[string, string]> }];
 
+const ENTER = 13;
 const ESC = 27;
 const BS = 128;
 const C_H = 8;
@@ -216,6 +217,8 @@ export const main = async (denops: Denops): Promise<void> => {
             code = await denops.call("getchar") as number;
             if (code == null) {
               code = 0;
+            } else if (code === ENTER) {
+              code = 65;
             }
           } else {
             useDefaultInput = false;
