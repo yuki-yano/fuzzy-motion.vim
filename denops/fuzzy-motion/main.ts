@@ -210,10 +210,7 @@ export const main = async (denops: Denops): Promise<void> => {
             code <= ";".charCodeAt(0)
           ) {
             input = `${input};`;
-          } else if (
-            input.slice(-1) === ";" && code >= "a".charCodeAt(0) &&
-            code <= "z".charCodeAt(0)
-          ) {
+          } else if (code >= "A".charCodeAt(0) && code <= "Z".charCodeAt(0)) {
             const targetChar = String.fromCharCode(code);
             const target = targets.find((target) => target.char === targetChar);
 
@@ -244,7 +241,7 @@ export const main = async (denops: Denops): Promise<void> => {
             await execute(denops, `echo '${input}'`);
             await execute(denops, `redraw`);
           } else if (
-            (code >= "A".charCodeAt(0) && code <= "z".charCodeAt(0)) ||
+            (code >= "a".charCodeAt(0) && code <= "z".charCodeAt(0)) ||
             (code >= "0".charCodeAt(0) && code <= "9".charCodeAt(0)) ||
             code === "_".charCodeAt(0) || code === "-".charCodeAt(0)
           ) {
@@ -256,7 +253,7 @@ export const main = async (denops: Denops): Promise<void> => {
                 return {
                   text: entry.item.text,
                   pos: entry.item.pos,
-                  char: String.fromCharCode("a".charCodeAt(0) + i),
+                  char: String.fromCharCode("A".charCodeAt(0) + i),
                 };
               },
             );
@@ -264,16 +261,6 @@ export const main = async (denops: Denops): Promise<void> => {
             await renderExtMarks(denops, namespace, targets);
             await execute(denops, `echo '${input}'`);
             await execute(denops, `redraw`);
-          } else if (code >= 1 && code <= 26) {
-            const targetChar = "a".charCodeAt(0) + code - 1;
-            const target = targets.find((target) =>
-              target.char === String.fromCharCode(targetChar)
-            );
-
-            if (target != null) {
-              await denops.call("cursor", target.pos.line, target.pos.col);
-              break;
-            }
           }
         }
       } catch (err) {
