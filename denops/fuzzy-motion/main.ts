@@ -210,10 +210,6 @@ export const main = async (denops: Denops): Promise<void> => {
 
           if (code === ESC) {
             break;
-          } else if (
-            code <= ";".charCodeAt(0)
-          ) {
-            input = `${input};`;
           } else if (code >= "A".charCodeAt(0) && code <= "Z".charCodeAt(0)) {
             const targetChar = String.fromCharCode(code);
             const target = targets.find((target) => target.char === targetChar);
