@@ -4,12 +4,8 @@ import * as helper from "https://deno.land/x/denops_std@v2.2.0/helper/mod.ts";
 import { Fzf } from "https://esm.sh/fzf@0.4.1";
 import {
   ensureNumber,
-  ensureString,
   isNumber,
-  isString,
 } from "https://deno.land/x/unknownutil@v1.1.4/mod.ts";
-
-type Mode = "prev" | "next" | "all";
 
 type WordPos = {
   line: number;
@@ -31,31 +27,20 @@ const ENTER = 13;
 const ESC = 27;
 const BS = 128;
 const C_H = 8;
+const C_W = 23;
 const TARGET_LENGTH = 26;
 
-let input = "";
-
-const getStartAndEndLine = async (denops: Denops, mode: Mode) => {
-  const startLine = await denops.call(
-    "line",
-    mode === "next" ? "." : "w0",
-  ) as number;
-  const endLine = await denops.call(
-    "line",
-    mode === "prev" ? "." : "w$",
-  ) as number;
-
+const getStartAndEndLine = async (denops: Denops) => {
+  const startLine = await denops.call("line", "w0") as number;
+  const endLine = await denops.call("line", "w$") as number;
   return {
     startLine,
     endLine,
   };
 };
 
-const getWords = async (
-  denops: Denops,
-  mode: Mode,
-): Promise<ReadonlyArray<Word>> => {
-  const { startLine, endLine } = await getStartAndEndLine(denops, mode);
+const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
+  const { startLine, endLine } = await getStartAndEndLine(denops);
 
   const lines = await denops.call(
     "getline",
@@ -83,7 +68,23 @@ const getWords = async (
   return words;
 };
 
-const removeExtMarks = async (denops: Denops, namespace: number) => {
+const getTarget = (fzf: Fzf<readonly Word[]>, input: string) => {
+  if (input !== "") {
+    return fzf.find(input).slice(0, TARGET_LENGTH).map<Target>(
+      (entry, i) => {
+        return {
+          text: entry.item.text,
+          pos: entry.item.pos,
+          char: String.fromCharCode("A".charCodeAt(0) + i),
+        };
+      },
+    );
+  } else {
+    return [];
+  }
+};
+
+const removeTargets = async (denops: Denops, namespace: number) => {
   const oldExtmarks = await denops.call(
     "nvim_buf_get_extmarks",
     0,
@@ -102,7 +103,7 @@ const removeExtMarks = async (denops: Denops, namespace: number) => {
   }));
 };
 
-const renderExtMarks = async (
+const renderTargets = async (
   denops: Denops,
   namespace: number,
   targets: Array<Target>,
@@ -135,56 +136,18 @@ export const main = async (denops: Denops): Promise<void> => {
   await helper.execute(
     denops,
     `
-    command! -nargs=? FuzzyMotion     call denops#request("${denops.name}", "execute", ['all', <q-args>])
-    command! -nargs=? FuzzyMotionNext call denops#request("${denops.name}", "execute", ['next', <q-args>])
-    command! -nargs=? FuzzyMotionPrev call denops#request("${denops.name}", "execute", ['prev', <q-args>])
+    command! -nargs=? FuzzyMotion     call denops#request("${denops.name}", "execute", [])
     `,
   );
 
   denops.dispatcher = {
-    execute: async (mode: unknown, defaultInput: unknown): Promise<void> => {
-      ensureString(mode);
-      ensureString(defaultInput);
-      if (
-        !isString(mode) ||
-        (mode !== "prev" && mode !== "next" && mode !== "all")
-      ) {
-        return;
-      }
-
-      let useDefaultInput = defaultInput !== "";
-
-      const pos = await denops.call("getpos", ".") as [
-        number,
-        number,
-        number,
-        number,
-      ];
-      const currentLineText = await denops.call("getline", pos[1]) as string;
-      const { startLine, endLine } = await getStartAndEndLine(denops, mode);
+    execute: async (): Promise<void> => {
+      const { startLine, endLine } = await getStartAndEndLine(denops);
 
       let matchIds: Array<number> = [];
-      matchIds = [
-        ...matchIds,
-        await denops.call(
-          "matchaddpos",
-          "FuzzyMotionShade",
-          [[
-            pos[1],
-            mode === "prev" ? 1 : pos[2],
-            mode === "prev" ? pos[2] : currentLineText.length,
-          ]],
-          10,
-        ) as number,
-      ];
-
       const lineNumbers = [
-        ...Array(
-          mode === "all" ? (endLine + startLine + 1) : (endLine - startLine),
-        ),
-      ].map((_, i) =>
-        i + startLine + (mode === "prev" || mode === "all" ? 0 : 1)
-      );
+        ...Array(endLine + startLine + 1),
+      ].map((_, i) => i + startLine);
       matchIds = [
         ...matchIds,
         ...await Promise.all(lineNumbers.map(async (lineNumber) => {
@@ -199,30 +162,25 @@ export const main = async (denops: Denops): Promise<void> => {
 
       await execute(denops, `redraw`);
 
-      input = defaultInput;
-      let targets: Array<Target> = [];
-
-      const words = await getWords(denops, mode as Mode);
+      const words = await getWords(denops);
       const fzf = new Fzf(words, {
         selector: (word) => word.text,
       });
 
       try {
-        await execute(denops, `echo 'fuzzy-motion: ${input}'`);
-        await execute(denops, `redraw`);
-
+        let input = "";
         while (true) {
-          let code: number;
-          if (!useDefaultInput) {
-            code = await denops.call("getchar") as number;
-            if (code == null) {
-              code = 0;
-            } else if (code === ENTER) {
-              code = 65;
-            }
-          } else {
-            useDefaultInput = false;
-            code = 0;
+          await execute(denops, `echo 'fuzzy-motion: ${input}'`);
+          await removeTargets(denops, namespace);
+          const targets = getTarget(fzf, input);
+          await renderTargets(denops, namespace, targets);
+          await execute(denops, `redraw`);
+
+          let code: number | null = await denops.call("getchar") as
+            | number
+            | null;
+          if (code === ENTER) {
+            code = 65;
           }
 
           if (!isNumber(code)) {
@@ -242,60 +200,25 @@ export const main = async (denops: Denops): Promise<void> => {
               break;
             }
           } else if (code === BS || code === C_H) {
-            await removeExtMarks(denops, namespace);
-
             input = input.slice(0, -1);
-            await execute(denops, `echo 'fuzzy-motion: ${input}'`);
-            await execute(denops, `redraw`);
-            if (input === "") {
-              continue;
-            }
-
-            targets = fzf.find(input).slice(0, TARGET_LENGTH).map<Target>(
-              (entry, i) => {
-                return {
-                  text: entry.item.text,
-                  pos: entry.item.pos,
-                  char: String.fromCharCode("A".charCodeAt(0) + i),
-                };
-              },
-            );
-
-            await renderExtMarks(denops, namespace, targets);
-            await execute(denops, `echo 'fuzzy-motion: ${input}'`);
-            await execute(denops, `redraw`);
+          } else if (code === C_W) {
+            input = "";
           } else if (
             (code >= "a".charCodeAt(0) && code <= "z".charCodeAt(0)) ||
             (code >= "0".charCodeAt(0) && code <= "9".charCodeAt(0)) ||
-            code === "_".charCodeAt(0) || code === "-".charCodeAt(0) ||
-            defaultInput !== ""
+            code === "_".charCodeAt(0) || code === "-".charCodeAt(0)
           ) {
-            await removeExtMarks(denops, namespace);
-
-            input = `${input}${code !== 0 ? String.fromCharCode(code) : ""}`;
-            targets = fzf.find(input).slice(0, TARGET_LENGTH).map<Target>(
-              (entry, i) => {
-                return {
-                  text: entry.item.text,
-                  pos: entry.item.pos,
-                  char: String.fromCharCode("A".charCodeAt(0) + i),
-                };
-              },
-            );
-
-            await renderExtMarks(denops, namespace, targets);
-            await execute(denops, `echo 'fuzzy-motion: ${input}'`);
-            await execute(denops, `redraw`);
+            input = `${input}${String.fromCharCode(code)}`;
           }
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(err);
       } finally {
         await Promise.all(matchIds.map((id) => {
           denops.call("matchdelete", id);
         }));
 
-        await removeExtMarks(denops, namespace);
+        await removeTargets(denops, namespace);
 
         await execute(denops, `echo ''`);
         await execute(denops, `redraw`);

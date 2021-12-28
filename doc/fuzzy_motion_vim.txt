@@ -22,16 +22,6 @@ COMMANDS                                        *fuzzy-motion-commands*
 :FuzzyMotion
     Fuzzy search the entire window for a word and move the cursor over it.
 
-                                                *:FuzzyMotionPrev*
-:FuzzyMotionPrev
-    Fuzzy search for words in the position below the cursor and
-    move the cursor over them.
-
-                                                *:FuzzyMotionNext*
-:FuzzyMotionNext
-    Fuzzy search for words in the position above the cursor and
-    move the cursor over them.
-
 ==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
 
