@@ -23,6 +23,15 @@ COMMANDS                                        *fuzzy-motion-commands*
     Fuzzy search the entire window for a word and move the cursor over it.
 
 ==============================================================================
+VARIABLES                                       *fuzzy-motion-variables*
+
+*g:fuzzy_motion_word_regexp_list*
+    A string list of regular expressions that generates a list of words.
+    TypeScript regular expressions are used.
+
+    Default: ['[0-9a-zA-Z_-]+']
+
+==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
 
 *FuzzyMotionShade*

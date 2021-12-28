@@ -1,7 +1,8 @@
 import type { Denops } from "https://deno.land/x/denops_std@v2.2.0/mod.ts";
+import { globals } from "https://deno.land/x/denops_std@v2.2.0/variable/mod.ts";
 import { execute } from "https://deno.land/x/denops_std@v2.2.0/helper/mod.ts";
 import * as helper from "https://deno.land/x/denops_std@v2.2.0/helper/mod.ts";
-import { Fzf } from "https://esm.sh/fzf@0.4.1";
+import { Fzf, FzfResultItem } from "https://esm.sh/fzf@0.4.1";
 import {
   ensureNumber,
   isNumber,
@@ -48,20 +49,28 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
     endLine,
   ) as ReadonlyArray<string>;
 
-  const regexp = new RegExp("[0-9a-zA-Z_-]+", "gu");
+  const regexpStrings = await globals.get(
+    denops,
+    "fuzzy_motion_word_regexp_list",
+  ) as Array<
+    string
+  >;
+  const regexpList = regexpStrings.map((str) => new RegExp(str, "gu"));
 
   let words: ReadonlyArray<Word> = [];
   let matchArray: RegExpExecArray | null = null;
 
   for (const [lineNumber, line] of lines.entries()) {
-    while ((matchArray = regexp.exec(line)) != null) {
-      words = [...words, {
-        text: line.slice(matchArray.index, regexp.lastIndex),
-        pos: {
-          line: lineNumber + startLine,
-          col: matchArray.index + 1,
-        },
-      }];
+    for (const regexp of regexpList) {
+      while ((matchArray = regexp.exec(line)) != null) {
+        words = [...words, {
+          text: line.slice(matchArray.index, regexp.lastIndex),
+          pos: {
+            line: lineNumber + startLine,
+            col: matchArray.index + 1,
+          },
+        }];
+      }
     }
   }
 
@@ -70,14 +79,25 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
 
 const getTarget = (fzf: Fzf<readonly Word[]>, input: string) => {
   if (input !== "") {
-    return fzf.find(input).slice(0, TARGET_LENGTH).map<Target>(
-      (entry, i) => {
-        return {
+    return fzf.find(input).reduce((acc: Array<FzfResultItem<Word>>, cur) => {
+      if (
+        acc.find((v) =>
+          v.item.pos.line === cur.item.pos.line &&
+          v.item.pos.col === cur.item.pos.col
+        )
+      ) {
+        return acc;
+      } else {
+        return [...acc, cur];
+      }
+    }, []).slice(0, TARGET_LENGTH).map<Target>(
+      (entry, i) => (
+        {
           text: entry.item.text,
           pos: entry.item.pos,
           char: String.fromCharCode("A".charCodeAt(0) + i),
-        };
-      },
+        }
+      ),
     );
   } else {
     return [];
@@ -200,11 +220,7 @@ export const main = async (denops: Denops): Promise<void> => {
             input = input.slice(0, -1);
           } else if (code === C_W) {
             input = "";
-          } else if (
-            (code >= "a".charCodeAt(0) && code <= "z".charCodeAt(0)) ||
-            (code >= "0".charCodeAt(0) && code <= "9".charCodeAt(0)) ||
-            code === "_".charCodeAt(0) || code === "-".charCodeAt(0)
-          ) {
+          } else if (code >= 33 && code <= 126) {
             input = `${input}${String.fromCharCode(code)}`;
           }
         }
