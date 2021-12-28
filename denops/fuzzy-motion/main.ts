@@ -147,23 +147,17 @@ export const main = async (denops: Denops): Promise<void> => {
     execute: async (): Promise<void> => {
       const { startLine, endLine } = await getStartAndEndLine(denops);
 
-      let matchIds: Array<number> = [];
       const lineNumbers = [
         ...Array(endLine + startLine + 1),
       ].map((_, i) => i + startLine);
-      matchIds = [
-        ...matchIds,
-        ...await Promise.all(lineNumbers.map(async (lineNumber) => {
-          return await denops.call(
-            "matchaddpos",
-            "FuzzyMotionShade",
-            [lineNumber],
-            10,
-          ) as number;
-        })),
-      ];
-
-      await execute(denops, `redraw`);
+      const matchIds = await Promise.all(lineNumbers.map(async (lineNumber) => {
+        return await denops.call(
+          "matchaddpos",
+          "FuzzyMotionShade",
+          [lineNumber],
+          10,
+        ) as number;
+      }));
 
       const words = await getWords(denops);
       const fzf = new Fzf(words, {
