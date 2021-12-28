@@ -22,14 +22,16 @@ type Target = Word & {
   char: string;
 };
 
-type Extmark = [number, number, number, { virt_text: Array<[string, string]> }];
-
 const ENTER = 13;
 const ESC = 27;
 const BS = 128;
 const C_H = 8;
 const C_W = 23;
 const TARGET_LENGTH = 26;
+
+let namespace: number;
+let textPropId: number;
+let markIds: Array<number> = [];
 
 const getStartAndEndLine = async (denops: Denops) => {
   const startLine = await denops.call("line", "w0") as number;
@@ -104,59 +106,100 @@ const getTarget = (fzf: Fzf<readonly Word[]>, input: string) => {
   }
 };
 
-const removeTargets = async (denops: Denops, namespace: number) => {
-  const oldExtmarks = await denops.call(
-    "nvim_buf_get_extmarks",
-    0,
-    namespace,
-    0,
-    -1,
-    { details: true },
-  ) as Array<Extmark>;
-  await Promise.all(oldExtmarks.map(async (oldMark) => {
-    await denops.call(
-      "nvim_buf_del_extmark",
-      0,
-      namespace,
-      oldMark[0],
-    );
-  }));
+const removeTargets = async (denops: Denops) => {
+  if (await denops.call("has", "nvim")) {
+    await Promise.all(markIds.map(async (markId) => {
+      await denops.call(
+        "nvim_buf_del_extmark",
+        0,
+        namespace,
+        markId,
+      );
+    }));
+  } else {
+    await Promise.all(markIds.map(async (markId) =>
+      await denops.call(
+        "prop_remove",
+        {
+          type: denops.name,
+          id: markId,
+        },
+      )
+    ));
+  }
+
+  markIds = [];
 };
 
-const renderTargets = async (
-  denops: Denops,
-  namespace: number,
-  targets: Array<Target>,
-) => {
-  for (const target of targets) {
-    await denops.call(
-      "nvim_buf_set_extmark",
-      0,
-      namespace,
-      target.pos.line - 1,
-      target.pos.col - 2 >= 0 ? target.pos.col - 2 : target.pos.col - 1,
-      {
-        virt_text: [[
-          target.char,
-          "FuzzyMotionChar",
-        ]],
-        virt_text_pos: "overlay",
-        hl_mode: "combine",
-      },
-    );
+const renderTargets = async (denops: Denops, targets: Array<Target>) => {
+  if (await denops.call("has", "nvim")) {
+    for (const target of targets) {
+      markIds = [
+        ...markIds,
+        await denops.call(
+          "nvim_buf_set_extmark",
+          0,
+          namespace,
+          target.pos.line - 1,
+          target.pos.col - 2 >= 0 ? target.pos.col - 2 : target.pos.col - 1,
+          {
+            virt_text: [[
+              target.char,
+              "FuzzyMotionChar",
+            ]],
+            virt_text_pos: "overlay",
+            hl_mode: "combine",
+          },
+        ) as number,
+      ];
+    }
+  } else {
+    for (const target of targets) {
+      textPropId += 1;
+      markIds = [...markIds, textPropId];
+
+      await denops.call(
+        "prop_add",
+        target.pos.line,
+        target.pos.col,
+        {
+          type: denops.name,
+          id: textPropId,
+        },
+      );
+      await denops.call(
+        "popup_create",
+        target.char,
+        {
+          line: -1,
+          col: -1,
+          textprop: denops.name,
+          textpropid: textPropId,
+          width: 1,
+          height: 1,
+          highlight: "FuzzyMotionChar",
+        },
+      );
+    }
   }
 };
 
 export const main = async (denops: Denops): Promise<void> => {
-  const namespace = await denops.call(
-    "nvim_create_namespace",
-    "fuzzy-motion",
-  ) as number;
+  if (await denops.call("has", "nvim")) {
+    namespace = await denops.call(
+      "nvim_create_namespace",
+      "fuzzy-motion",
+    ) as number;
+  } else {
+    textPropId = 0;
+    await denops.call("prop_type_delete", denops.name, {});
+    await denops.call("prop_type_add", denops.name, {});
+  }
 
   await helper.execute(
     denops,
     `
-    command! -nargs=? FuzzyMotion     call denops#request("${denops.name}", "execute", [])
+    command! -nargs=? FuzzyMotion call denops#request("${denops.name}", "execute", [])
 
     highlight FuzzyMotionShade cterm=NONE ctermbg=NONE ctermfg=grey gui=NONE guibg=NONE guifg=#777777
     highlight FuzzyMotionChar ctermfg=209 ctermbg=NONE cterm=underline,bold guifg=#E27878 guibg=NONE gui=underline,bold
@@ -188,9 +231,9 @@ export const main = async (denops: Denops): Promise<void> => {
         let input = "";
         while (true) {
           await execute(denops, `echo 'fuzzy-motion: ${input}'`);
-          await removeTargets(denops, namespace);
+          await removeTargets(denops);
           const targets = getTarget(fzf, input);
-          await renderTargets(denops, namespace, targets);
+          await renderTargets(denops, targets);
           await execute(denops, `redraw`);
 
           let code: number | null = await denops.call("getchar") as
@@ -231,10 +274,14 @@ export const main = async (denops: Denops): Promise<void> => {
           denops.call("matchdelete", id);
         }));
 
-        await removeTargets(denops, namespace);
+        await removeTargets(denops);
 
         await execute(denops, `echo ''`);
-        await execute(denops, `redraw`);
+        if (await denops.call("has", "nvim")) {
+          await execute(denops, `redraw`);
+        } else {
+          await execute(denops, `redraw!`);
+        }
       }
     },
   };

@@ -2,7 +2,7 @@
 
 Jump to fuzzy match word
 
-This plugin works with Neovim and depends on [denops.vim](https://github.com/vim-denops/denops.vim).
+This plugin depends on [denops.vim](https://github.com/vim-denops/denops.vim).
 
 ## Demo
 
