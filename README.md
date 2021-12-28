@@ -6,7 +6,7 @@ This plugin works with Neovim and depends on [denops.vim](https://github.com/vim
 
 ## Demo
 
-https://user-images.githubusercontent.com/5423775/147436437-aa24f2d5-138e-461f-9b74-708d329a574a.mp4
+https://user-images.githubusercontent.com/5423775/147598956-1752f5dd-5c9d-4c6c-8cec-b9d52a3eca00.mp4
 
 ## Usage
 
