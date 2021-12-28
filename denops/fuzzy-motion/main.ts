@@ -137,6 +137,9 @@ export const main = async (denops: Denops): Promise<void> => {
     denops,
     `
     command! -nargs=? FuzzyMotion     call denops#request("${denops.name}", "execute", [])
+
+    highlight FuzzyMotionShade cterm=NONE ctermbg=NONE ctermfg=grey gui=NONE guibg=NONE guifg=#777777
+    highlight FuzzyMotionChar ctermfg=209 ctermbg=NONE cterm=underline,bold guifg=#E27878 guibg=NONE gui=underline,bold
     `,
   );
 
