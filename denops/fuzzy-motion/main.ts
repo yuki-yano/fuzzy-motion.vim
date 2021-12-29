@@ -140,7 +140,7 @@ const removeTargets = async (denops: Denops) => {
 
 const renderTargets = async (denops: Denops, targets: Array<Target>) => {
   if (await denops.call("has", "nvim")) {
-    for (const target of targets) {
+    for (const [index, target] of targets.entries()) {
       markIds = [
         ...markIds,
         await denops.call(
@@ -152,7 +152,7 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
           {
             virt_text: [[
               target.char,
-              "FuzzyMotionChar",
+              index === 0 ? "FuzzyMotionChar" : "FuzzyMotionSubChar",
             ]],
             virt_text_pos: "overlay",
             hl_mode: "combine",
@@ -161,7 +161,7 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
       ];
     }
   } else {
-    for (const target of targets) {
+    for (const [index, target] of targets.entries()) {
       textPropId += 1;
       markIds = [...markIds, textPropId];
 
@@ -186,7 +186,7 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
             textpropid: textPropId,
             width: 1,
             height: 1,
-            highlight: "FuzzyMotionChar",
+            highlight: index === 0 ? "FuzzyMotionChar" : "FuzzyMotionSubChar",
           },
         ) as number,
       ];
@@ -211,8 +211,9 @@ export const main = async (denops: Denops): Promise<void> => {
     `
     command! -nargs=? FuzzyMotion call denops#request("${denops.name}", "execute", [])
 
-    highlight FuzzyMotionShade cterm=NONE ctermbg=NONE ctermfg=grey gui=NONE guibg=NONE guifg=#777777
-    highlight FuzzyMotionChar ctermfg=209 ctermbg=NONE cterm=underline,bold guifg=#E27878 guibg=NONE gui=underline,bold
+    highlight FuzzyMotionShade   ctermfg=grey ctermbg=NONE cterm=NONE           guibg=NONE    guifg=#777777 gui=NONE 
+    highlight FuzzyMotionChar    ctermfg=209  ctermbg=NONE cterm=underline,bold guifg=#E27878 guibg=NONE    gui=underline,bold
+    highlight FuzzyMotionSubChar ctermfg=209  ctermbg=NONE cterm=underline,bold guifg=#FFAF60 guibg=NONE    gui=NONE
     `,
   );
 

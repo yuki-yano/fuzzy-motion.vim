@@ -43,7 +43,14 @@ HIGHLIGHT                                       *fuzzy-motion-highlight*
     when the command is executed
 
 *FuzzyMotionChar*
-    This is the highlight of the label to be displayed at the beginning of
-    the matched words during the search.
+    This is the highlight of the first label to be displayed at the beginning
+    of the matched words during the search.
+
+    You can jump to the location where FuzzyMotionChar is applied
+    by pressing Enter.
+
+*FuzzyMotionSubChar*
+    This is the highlight of the second and later label to be displayed
+    at the beginning of the matched words during the search.
 
 vim:tw=78:sw=2:ts=2:ft=help:norl:nowrap:
