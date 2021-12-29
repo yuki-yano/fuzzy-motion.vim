@@ -32,6 +32,7 @@ const TARGET_LENGTH = 26;
 let namespace: number;
 let textPropId: number;
 let markIds: Array<number> = [];
+let popupIds: Array<number> = [];
 
 const getStartAndEndLine = async (denops: Denops) => {
   const startLine = await denops.call("line", "w0") as number;
@@ -126,6 +127,12 @@ const removeTargets = async (denops: Denops) => {
         },
       )
     ));
+    await Promise.all(
+      popupIds.map(async (popupId) =>
+        await denops.call("popup_close", popupId)
+      ),
+    );
+    popupIds = [];
   }
 
   markIds = [];
@@ -167,19 +174,22 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
           id: textPropId,
         },
       );
-      await denops.call(
-        "popup_create",
-        target.char,
-        {
-          line: -1,
-          col: -1,
-          textprop: denops.name,
-          textpropid: textPropId,
-          width: 1,
-          height: 1,
-          highlight: "FuzzyMotionChar",
-        },
-      );
+      popupIds = [
+        ...popupIds,
+        await denops.call(
+          "popup_create",
+          target.char,
+          {
+            line: -1,
+            col: -1,
+            textprop: denops.name,
+            textpropid: textPropId,
+            width: 1,
+            height: 1,
+            highlight: "FuzzyMotionChar",
+          },
+        ) as number,
+      ];
     }
   }
 };
