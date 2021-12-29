@@ -108,7 +108,7 @@ const getTarget = (fzf: Fzf<readonly Word[]>, input: string) => {
 };
 
 const removeTargets = async (denops: Denops) => {
-  if (await denops.call("has", "nvim")) {
+  if (denops.meta.host === "nvim") {
     await Promise.all(markIds.map(async (markId) => {
       await denops.call(
         "nvim_buf_del_extmark",
@@ -139,7 +139,7 @@ const removeTargets = async (denops: Denops) => {
 };
 
 const renderTargets = async (denops: Denops, targets: Array<Target>) => {
-  if (await denops.call("has", "nvim")) {
+  if (denops.meta.host === "nvim") {
     for (const [index, target] of targets.entries()) {
       markIds = [
         ...markIds,
@@ -195,7 +195,7 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
 };
 
 export const main = async (denops: Denops): Promise<void> => {
-  if (await denops.call("has", "nvim")) {
+  if (denops.meta.host === "nvim") {
     namespace = await denops.call(
       "nvim_create_namespace",
       "fuzzy-motion",
@@ -288,7 +288,7 @@ export const main = async (denops: Denops): Promise<void> => {
         await removeTargets(denops);
 
         await execute(denops, `echo ''`);
-        if (await denops.call("has", "nvim")) {
+        if (denops.meta.host === "nvim") {
           await execute(denops, `redraw`);
         } else {
           await execute(denops, `redraw!`);
