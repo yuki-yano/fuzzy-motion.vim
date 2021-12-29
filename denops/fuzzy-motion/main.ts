@@ -77,7 +77,8 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
     }
   }
 
-  return words;
+  // TODO: use iskeysord
+  return words.filter((word) => word.text.match(/^[a-zA-Z0-0]/) != null);
 };
 
 const getTarget = (fzf: Fzf<readonly Word[]>, input: string) => {
