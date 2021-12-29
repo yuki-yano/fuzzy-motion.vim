@@ -29,7 +29,11 @@ VARIABLES                                       *fuzzy-motion-variables*
     A string list of regular expressions that generates a list of words.
     TypeScript regular expressions are used.
 
-    Default: ['[0-9a-zA-Z_-]+']
+    Default: [
+               '[0-9a-zA-Z_-]+',
+               '([0-9a-zA-Z_-]|[.])+',
+               '([0-9a-zA-Z_-]|[().#])+'
+             ]
 
 ==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
