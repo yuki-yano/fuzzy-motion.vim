@@ -35,6 +35,15 @@ VARIABLES                                       *fuzzy-motion-variables*
                '([0-9a-zA-Z_-]|[().#])+'
              ]
 
+*g:fuzzy_motion_labels*
+    An array of labels to be displayed during the search.
+
+    Default: [
+               'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+               'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+               'Z', 'X', 'C', 'V', 'B', 'N', 'M'
+             ]
+
 ==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
 

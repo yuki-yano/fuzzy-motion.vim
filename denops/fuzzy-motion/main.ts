@@ -27,7 +27,6 @@ const ESC = 27;
 const BS = 128;
 const C_H = 8;
 const C_W = 23;
-const TARGET_LENGTH = 26;
 
 let namespace: number;
 let textPropId: number;
@@ -81,7 +80,11 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
   return words.filter((word) => word.text.match(/^[a-zA-Z0-0]/) != null);
 };
 
-const getTarget = (fzf: Fzf<readonly Word[]>, input: string) => {
+const getTarget = (
+  fzf: Fzf<readonly Word[]>,
+  input: string,
+  labels: Array<string>,
+) => {
   if (input !== "") {
     return fzf.find(input).reduce((acc: Array<FzfResultItem<Word>>, cur) => {
       if (
@@ -94,12 +97,12 @@ const getTarget = (fzf: Fzf<readonly Word[]>, input: string) => {
       } else {
         return [...acc, cur];
       }
-    }, []).slice(0, TARGET_LENGTH).map<Target>(
+    }, []).slice(0, labels.length).map<Target>(
       (entry, i) => (
         {
           text: entry.item.text,
           pos: entry.item.pos,
-          char: String.fromCharCode("A".charCodeAt(0) + i),
+          char: labels[i],
         }
       ),
     );
@@ -239,12 +242,19 @@ export const main = async (denops: Denops): Promise<void> => {
         selector: (word) => word.text,
       });
 
+      const labels = await globals.get(
+        denops,
+        "fuzzy_motion_labels",
+      ) as Array<
+        string
+      >;
+
       try {
         let input = "";
         while (true) {
           await execute(denops, `echo 'fuzzy-motion: ${input}'`);
           await removeTargets(denops);
-          const targets = getTarget(fzf, input);
+          const targets = getTarget(fzf, input, labels);
           await renderTargets(denops, targets);
           await execute(denops, `redraw`);
 
@@ -262,7 +272,9 @@ export const main = async (denops: Denops): Promise<void> => {
 
           if (code === ESC) {
             break;
-          } else if (code >= "A".charCodeAt(0) && code <= "Z".charCodeAt(0)) {
+          } else if (
+            labels.find((label) => label.charCodeAt(0) === code) != null
+          ) {
             const targetChar = String.fromCharCode(code);
             const target = targets.find((target) => target.char === targetChar);
 
