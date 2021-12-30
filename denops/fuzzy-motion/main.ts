@@ -266,7 +266,7 @@ export const main = async (denops: Denops): Promise<void> => {
             | number
             | null;
           if (code === ENTER) {
-            code = 65;
+            code = labels[0].charCodeAt(0);
           }
 
           if (!isNumber(code)) {
