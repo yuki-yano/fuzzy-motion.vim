@@ -54,9 +54,8 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
   const regexpStrings = await globals.get(
     denops,
     "fuzzy_motion_word_regexp_list",
-  ) as Array<
-    string
-  >;
+  ) as Array<string>;
+
   const regexpList = regexpStrings.map((str) => new RegExp(str, "gu"));
 
   let words: ReadonlyArray<Word> = [];
@@ -76,8 +75,17 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
     }
   }
 
+  const filterRegexpList = (await globals.get(
+    denops,
+    "fuzzy_motion_word_filter_regexp_list",
+  ) as Array<string>).map((str) => new RegExp(str, "gu"));
+
   // TODO: use iskeysord
-  return words.filter((word) => word.text.match(/^[a-zA-Z0-0]/) != null);
+  for (const regexp of filterRegexpList) {
+    words = words.filter((word) => word.text.match(regexp));
+  }
+
+  return words;
 };
 
 const getTarget = (

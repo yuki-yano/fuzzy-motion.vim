@@ -44,6 +44,12 @@ VARIABLES                                       *fuzzy-motion-variables*
                'Z', 'X', 'C', 'V', 'B', 'N', 'M'
              ]
 
+*g:fuzzy_motion_word_filter_regexp_list*
+    An array of regular expressions for filtering candidate words.
+    TypeScript regular expressions are used.
+
+    Default: ['^[a-zA-Z0-0]']
+
 ==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
 
