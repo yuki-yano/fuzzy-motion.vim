@@ -291,7 +291,7 @@ export const main = async (denops: Denops): Promise<void> => {
             input = input.slice(0, -1);
           } else if (code === C_W) {
             input = "";
-          } else if (code >= 33 && code <= 126) {
+          } else if (code >= "!".charCodeAt(0) && code <= "~".charCodeAt(0)) {
             input = `${input}${String.fromCharCode(code)}`;
           }
         }
