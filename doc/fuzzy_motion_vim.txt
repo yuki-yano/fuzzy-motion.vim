@@ -50,6 +50,11 @@ VARIABLES                                       *fuzzy-motion-variables*
 
     Default: ['^[a-zA-Z0-0]']
 
+*g:fuzzy_motion_auto_jump*
+    When true, it automatically jumps when there is only one label.
+
+    Default: v:false
+
 ==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
 

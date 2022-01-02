@@ -14,6 +14,10 @@ if !exists('g:fuzzy_motion_word_filter_regexp_list')
   let g:fuzzy_motion_word_filter_regexp_list = ['^[a-zA-Z0-0]']
 endif
 
+if !exists('g:fuzzy_motion_auto_jump')
+  let g:fuzzy_motion_auto_jump = v:false
+endif
+
 function! s:initialize_highlight() abort
   highlight default FuzzyMotionShade   ctermfg=grey ctermbg=NONE cterm=NONE           guibg=NONE    guifg=#777777 gui=NONE
   highlight default FuzzyMotionChar    ctermfg=209  ctermbg=NONE cterm=underline,bold guifg=#E27878 guibg=NONE    gui=underline,bold

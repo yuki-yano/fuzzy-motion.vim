@@ -206,6 +206,11 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
   }
 };
 
+export const jumpTarget = async (denops: Denops, target: Target) => {
+  await execute(denops, "normal! m`");
+  await denops.call("cursor", target.pos.line, target.pos.col);
+};
+
 export const main = async (denops: Denops): Promise<void> => {
   if (denops.meta.host === "nvim") {
     namespace = await denops.call(
@@ -249,9 +254,12 @@ export const main = async (denops: Denops): Promise<void> => {
       const labels = await globals.get(
         denops,
         "fuzzy_motion_labels",
-      ) as Array<
-        string
-      >;
+      ) as Array<string>;
+
+      const autoJump = await globals.get(
+        denops,
+        "fuzzy_motion_auto_jump",
+      ) as boolean;
 
       try {
         let input = "";
@@ -283,8 +291,7 @@ export const main = async (denops: Denops): Promise<void> => {
             const target = targets.find((target) => target.char === targetChar);
 
             if (target != null) {
-              await execute(denops, "normal! m`");
-              await denops.call("cursor", target.pos.line, target.pos.col);
+              jumpTarget(denops, target);
               break;
             }
           } else if (code === BS || code === C_H) {
@@ -293,6 +300,11 @@ export const main = async (denops: Denops): Promise<void> => {
             input = "";
           } else if (code >= "!".charCodeAt(0) && code <= "~".charCodeAt(0)) {
             input = `${input}${String.fromCharCode(code)}`;
+            const targets = getTarget(fzf, input, labels);
+            if (autoJump && targets.length === 1) {
+              jumpTarget(denops, targets[0]);
+              break;
+            }
           }
         }
       } catch (err: unknown) {
