@@ -100,7 +100,7 @@ const getTarget = (
       if (
         acc.find((v) =>
           v.item.pos.line === cur.item.pos.line &&
-          v.item.pos.col === cur.item.pos.col
+          v.item.pos.col + v.start === cur.item.pos.col + cur.start
         )
       ) {
         return acc;
