@@ -20,6 +20,8 @@ type Word = {
 
 type Target = Word & {
   char: string;
+  start: number;
+  end: number;
 };
 
 const ENTER = 13;
@@ -109,6 +111,8 @@ const getTarget = (
       (entry, i) => (
         {
           text: entry.item.text,
+          start: entry.start,
+          end: entry.end,
           pos: entry.item.pos,
           char: labels[i],
         }
@@ -160,7 +164,9 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
           0,
           namespace,
           target.pos.line - 1,
-          target.pos.col - 2 >= 0 ? target.pos.col - 2 : target.pos.col - 1,
+          target.pos.col - 2 >= 0
+            ? target.pos.col - 2 + target.start
+            : target.pos.col - 1 + target.start,
           {
             virt_text: [[
               target.char,
@@ -180,7 +186,7 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
       await denops.call(
         "prop_add",
         target.pos.line,
-        target.pos.col,
+        target.pos.col + target.start,
         {
           type: denops.name,
           id: textPropId,
@@ -208,7 +214,7 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
 
 export const jumpTarget = async (denops: Denops, target: Target) => {
   await execute(denops, "normal! m`");
-  await denops.call("cursor", target.pos.line, target.pos.col);
+  await denops.call("cursor", target.pos.line, target.pos.col + target.start);
 };
 
 export const main = async (denops: Denops): Promise<void> => {
