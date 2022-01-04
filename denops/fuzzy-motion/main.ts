@@ -2,7 +2,7 @@ import type { Denops } from "https://deno.land/x/denops_std@v2.2.0/mod.ts";
 import { globals } from "https://deno.land/x/denops_std@v2.2.0/variable/mod.ts";
 import { execute } from "https://deno.land/x/denops_std@v2.2.0/helper/mod.ts";
 import * as helper from "https://deno.land/x/denops_std@v2.2.0/helper/mod.ts";
-import { Fzf, FzfResultItem } from "https://esm.sh/fzf@0.4.1";
+import { extendedMatch, Fzf, FzfResultItem } from "https://esm.sh/fzf@0.4.1";
 import {
   ensureNumber,
   isNumber,
@@ -255,6 +255,7 @@ export const main = async (denops: Denops): Promise<void> => {
       const words = await getWords(denops);
       const fzf = new Fzf(words, {
         selector: (word) => word.text,
+        match: extendedMatch,
       });
 
       const labels = await globals.get(
@@ -304,7 +305,7 @@ export const main = async (denops: Denops): Promise<void> => {
             input = input.slice(0, -1);
           } else if (code === C_W) {
             input = "";
-          } else if (code >= "!".charCodeAt(0) && code <= "~".charCodeAt(0)) {
+          } else if (code >= " ".charCodeAt(0) && code <= "~".charCodeAt(0)) {
             input = `${input}${String.fromCharCode(code)}`;
             const targets = getTarget(fzf, input, labels);
             if (autoJump && targets.length === 1) {
