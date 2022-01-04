@@ -5,6 +5,7 @@ import * as helper from "https://deno.land/x/denops_std@v2.2.0/helper/mod.ts";
 import { extendedMatch, Fzf, FzfResultItem } from "https://esm.sh/fzf@0.4.1";
 import {
   ensureNumber,
+  ensureString,
   isNumber,
 } from "https://deno.land/x/unknownutil@v1.1.4/mod.ts";
 
@@ -22,6 +23,7 @@ type Target = Word & {
   char: string;
   start: number;
   end: number;
+  score: number;
 };
 
 const ENTER = 13;
@@ -115,6 +117,7 @@ const getTarget = (
           end: entry.end,
           pos: entry.item.pos,
           char: labels[i],
+          score: entry.score,
         }
       ),
     );
@@ -237,6 +240,17 @@ export const main = async (denops: Denops): Promise<void> => {
   );
 
   denops.dispatcher = {
+    targets: async (input: unknown): Promise<Array<Target>> => {
+      ensureString(input);
+      const words = await getWords(denops);
+
+      const fzf = new Fzf(words, {
+        selector: (word) => word.text,
+        match: extendedMatch,
+      });
+
+      return getTarget(fzf, input, [...Array(100)].map((_) => " "));
+    },
     execute: async (): Promise<void> => {
       const { startLine, endLine } = await getStartAndEndLine(denops);
 
