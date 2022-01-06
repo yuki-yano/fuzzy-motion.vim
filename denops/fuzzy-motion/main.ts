@@ -95,28 +95,35 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
 const getTarget = (
   fzf: Fzf<readonly Word[]>,
   input: string,
-  labels: Array<string>,
+  labels: Array<string> | undefined = undefined,
 ) => {
   if (input !== "") {
-    return fzf.find(input).reduce((acc: Array<FzfResultItem<Word>>, cur) => {
-      if (
-        acc.find((v) =>
-          v.item.pos.line === cur.item.pos.line &&
-          v.item.pos.col + v.start === cur.item.pos.col + cur.start
-        )
-      ) {
-        return acc;
-      } else {
-        return [...acc, cur];
-      }
-    }, []).slice(0, labels.length).map<Target>(
+    const targets = fzf.find(input).reduce(
+      (acc: Array<FzfResultItem<Word>>, cur) => {
+        if (
+          acc.find((v) =>
+            v.item.pos.line === cur.item.pos.line &&
+            v.item.pos.col + v.start === cur.item.pos.col + cur.start
+          )
+        ) {
+          return acc;
+        } else {
+          return [...acc, cur];
+        }
+      },
+      [],
+    );
+    return targets.slice(
+      0,
+      labels?.length != null ? labels.length : targets.length,
+    ).map<Target>(
       (entry, i) => (
         {
           text: entry.item.text,
           start: entry.start,
           end: entry.end,
           pos: entry.item.pos,
-          char: labels[i],
+          char: labels != null ? labels[i] : "",
           score: entry.score,
         }
       ),
@@ -249,7 +256,7 @@ export const main = async (denops: Denops): Promise<void> => {
         match: extendedMatch,
       });
 
-      return getTarget(fzf, input, [...Array(100)].map((_) => " "));
+      return getTarget(fzf, input);
     },
     execute: async (): Promise<void> => {
       const { startLine, endLine } = await getStartAndEndLine(denops);
