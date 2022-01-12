@@ -63,11 +63,11 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
   const regexpList = regexpStrings.map((str) => new RegExp(str, "gu"));
 
   let words: ReadonlyArray<Word> = [];
-  let matchArray: RegExpExecArray | null = null;
+  let matchArray: RegExpExecArray | undefined = undefined;
 
   for (const [lineNumber, line] of lines.entries()) {
     for (const regexp of regexpList) {
-      while ((matchArray = regexp.exec(line)) != null) {
+      while ((matchArray = (regexp.exec(line)) ?? undefined)) {
         words = [...words, {
           text: line.slice(matchArray.index, regexp.lastIndex),
           pos: {
@@ -86,7 +86,7 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
 
   // TODO: use iskeysord
   for (const regexp of filterRegexpList) {
-    words = words.filter((word) => word.text.match(regexp));
+    words = words.filter((word) => word.text.match(regexp) != null);
   }
 
   return words;
@@ -100,12 +100,12 @@ const getTarget = (
   if (input !== "") {
     const targets = fzf.find(input).reduce(
       (acc: Array<FzfResultItem<Word>>, cur) => {
-        if (
-          acc.find((v) =>
-            v.item.pos.line === cur.item.pos.line &&
-            v.item.pos.col + v.start === cur.item.pos.col + cur.start
-          )
-        ) {
+        const duplicateTarget = acc.find((v) =>
+          v.item.pos.line === cur.item.pos.line &&
+          v.item.pos.col + v.start === cur.item.pos.col + cur.start
+        );
+
+        if (duplicateTarget != null) {
           return acc;
         } else {
           return [...acc, cur];
@@ -113,6 +113,7 @@ const getTarget = (
       },
       [],
     );
+
     return targets.slice(
       0,
       labels?.length != null ? labels.length : targets.length,
