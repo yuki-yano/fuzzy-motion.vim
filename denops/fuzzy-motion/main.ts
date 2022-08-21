@@ -36,6 +36,7 @@ let namespace: number;
 let textPropId: number;
 let markIds: Array<number> = [];
 let popupIds: Array<number> = [];
+let targetMatchIds: Array<number> = [];
 
 const getStartAndEndLine = async (denops: Denops) => {
   const startLine = await denops.call("line", "w0") as number;
@@ -162,12 +163,22 @@ const removeTargets = async (denops: Denops) => {
     popupIds = [];
   }
 
+  await Promise.all(targetMatchIds.map((id) => {
+    denops.call("matchdelete", id);
+  }));
+
   markIds = [];
+  targetMatchIds = [];
 };
 
 const renderTargets = async (denops: Denops, targets: Array<Target>) => {
-  if (denops.meta.host === "nvim") {
-    for (const [index, target] of targets.entries()) {
+  const disableMatchHighlight = await globals.get(
+    denops,
+    "fuzzy_motion_disable_match_highlight",
+  ) as boolean;
+
+  for (const [index, target] of targets.entries()) {
+    if (denops.meta.host === "nvim") {
       markIds = [
         ...markIds,
         await denops.call(
@@ -188,9 +199,7 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
           },
         ) as number,
       ];
-    }
-  } else {
-    for (const [index, target] of targets.entries()) {
+    } else {
       textPropId += 1;
       markIds = [...markIds, textPropId];
 
@@ -217,6 +226,24 @@ const renderTargets = async (denops: Denops, targets: Array<Target>) => {
             height: 1,
             highlight: index === 0 ? "FuzzyMotionChar" : "FuzzyMotionSubChar",
           },
+        ) as number,
+      ];
+    }
+
+    if (!disableMatchHighlight) {
+      targetMatchIds = [
+        ...targetMatchIds,
+        await denops.call(
+          "matchaddpos",
+          "FuzzyMotionMatch",
+          [
+            [
+              target.pos.line,
+              target.pos.col + target.start,
+              target.text.length,
+            ],
+          ],
+          20,
         ) as number,
       ];
     }

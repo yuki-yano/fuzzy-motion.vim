@@ -18,10 +18,15 @@ if !exists('g:fuzzy_motion_auto_jump')
   let g:fuzzy_motion_auto_jump = v:false
 endif
 
+if !exists('g:fuzzy_motion_disable_match_highlight')
+  let g:fuzzy_motion_disable_match_highlight = v:false
+endif
+
 function! s:initialize_highlight() abort
-  highlight default FuzzyMotionShade   ctermfg=grey ctermbg=NONE cterm=NONE           guibg=NONE    guifg=#777777 gui=NONE
-  highlight default FuzzyMotionChar    ctermfg=209  ctermbg=NONE cterm=underline,bold guifg=#E27878 guibg=NONE    gui=underline,bold
-  highlight default FuzzyMotionSubChar ctermfg=209  ctermbg=NONE cterm=underline,bold guifg=#FFAF60 guibg=NONE    gui=NONE
+  highlight default FuzzyMotionShade   ctermfg=grey ctermbg=NONE cterm=NONE           guifg=#777777 guibg=NONE gui=NONE
+  highlight default FuzzyMotionChar    ctermfg=209  ctermbg=NONE cterm=underline,bold guifg=#E27878 guibg=NONE gui=underline,bold
+  highlight default FuzzyMotionSubChar ctermfg=209  ctermbg=NONE cterm=underline,bold guifg=#FFAF60 guibg=NONE gui=NONE
+  highlight default FuzzyMotionMatch   ctermfg=grey ctermbg=NONE cterm=underline,bold guifg=#7daea3 guibg=NONE gui=NONE
 endfunction
 
 augroup FuzzyMotion

@@ -55,6 +55,11 @@ VARIABLES                                       *fuzzy-motion-variables*
 
     Default: v:false
 
+*g:fuzzy_motion_disable_match_highlight*
+    When not true, matches are highlighted.
+
+    Default: v:false
+
 ==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
 
