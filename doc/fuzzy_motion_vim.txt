@@ -78,4 +78,7 @@ HIGHLIGHT                                       *fuzzy-motion-highlight*
     This is the highlight of the second and later label to be displayed
     at the beginning of the matched words during the search.
 
+*FuzzyMotionMatch*
+    This is the highlight of match string.
+
 vim:tw=78:sw=2:ts=2:ft=help:norl:nowrap:
