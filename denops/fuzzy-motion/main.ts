@@ -267,13 +267,6 @@ export const main = async (denops: Denops): Promise<void> => {
     await denops.call("prop_type_add", denops.name, {});
   }
 
-  await helper.execute(
-    denops,
-    `
-    command! -nargs=? FuzzyMotion call denops#request("${denops.name}", "execute", [])
-    `,
-  );
-
   denops.dispatcher = {
     targets: async (input: unknown): Promise<Array<Target>> => {
       ensureString(input);
