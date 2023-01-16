@@ -35,3 +35,5 @@ augroup FuzzyMotion
 augroup END
 
 call s:initialize_highlight()
+
+command! -nargs=? FuzzyMotion call fuzzy_motion#request("execute", [])
