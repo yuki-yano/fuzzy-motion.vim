@@ -7,11 +7,11 @@ if !exists('g:fuzzy_motion_labels')
 endif
 
 if !exists('g:fuzzy_motion_word_regexp_list')
-  let g:fuzzy_motion_word_regexp_list = ['[0-9a-zA-Z_-]+', '([0-9a-zA-Z_-]|[.])+', '([0-9a-zA-Z_-]|[().#])+']
+  let g:fuzzy_motion_word_regexp_list = ['[0-9a-zA-Z_-]+', '([0-9a-zA-Z_-]|[.])+', '([0-9a-zA-Z_-]|[().#])+', '\P{Script_Extensions=Latin}+']
 endif
 
 if !exists('g:fuzzy_motion_word_filter_regexp_list')
-  let g:fuzzy_motion_word_filter_regexp_list = ['^[a-zA-Z0-0]']
+  let g:fuzzy_motion_word_filter_regexp_list = []
 endif
 
 if !exists('g:fuzzy_motion_auto_jump')
@@ -20,6 +20,10 @@ endif
 
 if !exists('g:fuzzy_motion_disable_match_highlight')
   let g:fuzzy_motion_disable_match_highlight = v:false
+endif
+
+if !exists('g:fuzzy_motion_matchers')
+  let g:fuzzy_motion_matchers = ['fzf']
 endif
 
 function! s:initialize_highlight() abort

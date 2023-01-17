@@ -11,6 +11,11 @@ This plugin depends on denops.vim.
 - denops.vim
     https://github.com/vim-denops/denops.vim
 
+By installing kensaku.vim, you can search Japanese using migemo.
+
+- kensaku.vim
+    https://github.com/lambdalisue/kensaku.vim
+
 
 Author:  yuki-yano
 License: MIT
@@ -33,6 +38,7 @@ VARIABLES                                       *fuzzy-motion-variables*
                '[0-9a-zA-Z_-]+',
                '([0-9a-zA-Z_-]|[.])+',
                '([0-9a-zA-Z_-]|[().#])+'
+               '\P{Script_Extensions=Latin}+'
              ]
 
 *g:fuzzy_motion_labels*
@@ -48,7 +54,7 @@ VARIABLES                                       *fuzzy-motion-variables*
     An array of regular expressions for filtering candidate words.
     TypeScript regular expressions are used.
 
-    Default: ['^[a-zA-Z0-0]']
+    Default: []
 
 *g:fuzzy_motion_auto_jump*
     When true, it automatically jumps when there is only one label.
@@ -59,6 +65,12 @@ VARIABLES                                       *fuzzy-motion-variables*
     When not true, matches are highlighted.
 
     Default: v:false
+
+*g:fuzzy_motion_matchers*
+    List of matchers to use for the search.
+    Default is 'fzf', with the option to use 'kensaku'.
+
+    Default: ['fzf']
 
 ==============================================================================
 HIGHLIGHT                                       *fuzzy-motion-highlight*
