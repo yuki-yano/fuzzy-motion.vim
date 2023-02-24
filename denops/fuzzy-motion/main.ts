@@ -178,6 +178,15 @@ const mountTargets = async (denops: Denops, targets: ReadonlyArray<Target>) => {
 
   for (const [index, target] of targets.entries()) {
     if (denops.meta.host === "nvim") {
+      // Ensure virt_text occupies the full display width of base text by following process
+      // 1. get relative start column of a base character as `col_offset`
+      // 2. get a strdisplaywidth of the base character as `width_base_text` and use it to pad `target.char`
+      // Otherwise, strange shifting of text positions occur due to the coercion of the strdisplaywidth of base the base character to 1.
+      const col_match = target.pos.col + target.start - 1
+      const lines = (await denops.call("nvim_buf_get_lines", 0, target.pos.line - 1, target.pos.line, true)) as Array<string>;
+      const idx_match = (await denops.call("charidx", lines[0], col_match)) as number;
+      const col_offset = idx_match == 0 ? 0 : (await denops.call("byteidx", lines[0][idx_match - 1], 1)) as number
+      const width_base_text = (await denops.call("strdisplaywidth", lines[0][idx_match == 0 ? 0 : (idx_match - 1)])) as number;
       markIds = [
         ...markIds,
         (await denops.call(
@@ -185,13 +194,11 @@ const mountTargets = async (denops: Denops, targets: ReadonlyArray<Target>) => {
           0,
           namespace,
           target.pos.line - 1,
-          target.pos.col - 2 >= 0
-            ? target.pos.col - 2 + target.start
-            : target.pos.col - 1 + target.start,
+          col_match - col_offset,
           {
             virt_text: [
               [
-                target.char,
+                target.char.padStart(width_base_text, ' '),
                 index === 0 ? "FuzzyMotionChar" : "FuzzyMotionSubChar",
               ],
             ],
