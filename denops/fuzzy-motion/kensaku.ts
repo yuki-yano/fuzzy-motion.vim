@@ -19,17 +19,17 @@ export const getKensakuResults = async ({
 
   const kensakuQuery = await denops.dispatch("kensaku", "query", input);
   assertString(kensakuQuery);
-  const kensakuPattern = new RegExp(kensakuQuery);
+  const kensakuPattern = new RegExp(kensakuQuery, "g");
+  const search = (word: Word) => kensakuPattern.exec(word.text);
 
   let kensakuResults: Array<Result> = [];
   for (const word of words) {
-    const match = kensakuPattern.exec(word.text);
-    if (match != null) {
+    let match = search(word);
+    while (match) {
       const matchIndex = Buffer.byteLength(word.text.slice(0, match.index));
-      const end =
-        matchIndex +
+      const end = matchIndex +
         Buffer.byteLength(
-          word.text.slice(match.index, match.index + match[0].length)
+          word.text.slice(match.index, match.index + match[0].length),
         );
       kensakuResults = [
         ...kensakuResults,
@@ -40,6 +40,7 @@ export const getKensakuResults = async ({
           score: KENSAKU_SCORE,
         },
       ];
+      match = search(word);
     }
   }
 
