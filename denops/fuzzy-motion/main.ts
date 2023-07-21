@@ -20,6 +20,8 @@ let markIds: Array<number> = [];
 let popupIds: Array<number> = [];
 let targetMatchIds: Array<number> = [];
 
+let targetCache: Array<Target> = [];
+
 const getStartAndEndLine = async (denops: Denops) => {
   const startLine = (await denops.call("line", "w0")) as number;
   const endLine = (await denops.call("line", "w$")) as number;
@@ -35,12 +37,12 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
   const lines = (await denops.call(
     "getline",
     startLine,
-    endLine
+    endLine,
   )) as ReadonlyArray<string>;
 
   const regexpStrings = (await globals.get(
     denops,
-    "fuzzy_motion_word_regexp_list"
+    "fuzzy_motion_word_regexp_list",
   )) as Array<string>;
 
   const regexpList = regexpStrings.map((str) => new RegExp(str, "gu"));
@@ -68,7 +70,7 @@ const getWords = async (denops: Denops): Promise<ReadonlyArray<Word>> => {
   const filterRegexpList = (
     (await globals.get(
       denops,
-      "fuzzy_motion_word_filter_regexp_list"
+      "fuzzy_motion_word_filter_regexp_list",
     )) as Array<string>
   ).map((str) => new RegExp(str, "gu"));
 
@@ -95,10 +97,8 @@ const getTarget = async ({
     return [];
   }
 
-  const matchers = (await globals.get(
-    denops,
-    "fuzzy_motion_matchers"
-  )) as Array<string>;
+  const matchers =
+    (await globals.get(denops, "fuzzy_motion_matchers")) as Array<string>;
   const fzfResult = matchers.includes("fzf")
     ? getFzfResults({ input, words })
     : [];
@@ -106,12 +106,12 @@ const getTarget = async ({
     ? await getKensakuResults({ denops, input, words })
     : [];
 
-  const targets = [...fzfResult, ...kensakuResults].reduce(
+  const results = [...fzfResult, ...kensakuResults].reduce(
     (acc: Array<Result>, cur) => {
       const duplicateTarget = acc.find(
         (v) =>
           v.item.pos.line === cur.item.pos.line &&
-          v.item.pos.col + v.start === cur.item.pos.col + cur.start
+          v.item.pos.col + v.start === cur.item.pos.col + cur.start,
       );
 
       if (duplicateTarget != null) {
@@ -120,21 +120,37 @@ const getTarget = async ({
         return [...acc, cur];
       }
     },
-    []
+    [],
   );
 
-  return targets
-    .slice(0, labels?.length != null ? labels.length : targets.length)
-    .map<Target>((entry, i) => {
-      return {
-        text: entry.item.text,
-        start: entry.start,
-        end: entry.end,
-        pos: entry.item.pos,
-        char: labels != null ? labels[i] : "",
-        score: entry.score,
-      };
-    });
+  let labelIndex = 0;
+  const labeledTargets: Array<Target> = [];
+
+  results.forEach((entry) => {
+    const cachedTarget = targetCache.find(
+      (cache) =>
+        cache.pos.line === entry.item.pos.line &&
+        cache.pos.col === entry.item.pos.col && cache.start === entry.start,
+    );
+
+    const newTarget = {
+      text: entry.item.text,
+      start: entry.start,
+      end: entry.end,
+      pos: entry.item.pos,
+      score: entry.score,
+    };
+
+    if (cachedTarget) {
+      labeledTargets.push({ ...newTarget, char: cachedTarget.char });
+    } else if (labels != null && labelIndex < labels.length) {
+      labeledTargets.push({ ...newTarget, char: labels[labelIndex] });
+      labelIndex++;
+    }
+  });
+
+  targetCache = labeledTargets;
+  return labeledTargets;
 };
 
 const unmountTargets = async (denops: Denops) => {
@@ -142,7 +158,7 @@ const unmountTargets = async (denops: Denops) => {
     await Promise.all(
       markIds.map(async (markId) => {
         await denops.call("nvim_buf_del_extmark", 0, namespace, markId);
-      })
+      }),
     );
   } else {
     await Promise.all(
@@ -151,11 +167,13 @@ const unmountTargets = async (denops: Denops) => {
           await denops.call("prop_remove", {
             type: denops.name,
             id: markId,
-          })
-      )
+          }),
+      ),
     );
     await Promise.all(
-      popupIds.map(async (popupId) => await denops.call("popup_close", popupId))
+      popupIds.map(async (popupId) =>
+        await denops.call("popup_close", popupId)
+      ),
     );
     popupIds = [];
   }
@@ -163,7 +181,7 @@ const unmountTargets = async (denops: Denops) => {
   await Promise.all(
     targetMatchIds.map((id) => {
       denops.call("matchdelete", id);
-    })
+    }),
   );
 
   markIds = [];
@@ -173,7 +191,7 @@ const unmountTargets = async (denops: Denops) => {
 const mountTargets = async (denops: Denops, targets: ReadonlyArray<Target>) => {
   const disableMatchHighlight = (await globals.get(
     denops,
-    "fuzzy_motion_disable_match_highlight"
+    "fuzzy_motion_disable_match_highlight",
   )) as boolean;
 
   for (const [index, target] of targets.entries()) {
@@ -182,11 +200,23 @@ const mountTargets = async (denops: Denops, targets: ReadonlyArray<Target>) => {
       // 1. get relative start column of a base character as `col_offset`
       // 2. get a strdisplaywidth of the base character as `width_base_text` and use it to pad `target.char`
       // Otherwise, strange shifting of text positions occur due to the coercion of the strdisplaywidth of base the base character to 1.
-      const col_match = target.pos.col + target.start - 1
-      const lines = (await denops.call("nvim_buf_get_lines", 0, target.pos.line - 1, target.pos.line, true)) as Array<string>;
-      const idx_match = (await denops.call("charidx", lines[0], col_match)) as number;
-      const col_offset = idx_match == 0 ? 0 : (await denops.call("byteidx", lines[0][idx_match - 1], 1)) as number
-      const width_base_text = (await denops.call("strdisplaywidth", lines[0][idx_match == 0 ? 0 : (idx_match - 1)])) as number;
+      const col_match = target.pos.col + target.start - 1;
+      const lines = (await denops.call(
+        "nvim_buf_get_lines",
+        0,
+        target.pos.line - 1,
+        target.pos.line,
+        true,
+      )) as Array<string>;
+      const idx_match =
+        (await denops.call("charidx", lines[0], col_match)) as number;
+      const col_offset = idx_match == 0
+        ? 0
+        : (await denops.call("byteidx", lines[0][idx_match - 1], 1)) as number;
+      const width_base_text = (await denops.call(
+        "strdisplaywidth",
+        lines[0][idx_match == 0 ? 0 : (idx_match - 1)],
+      )) as number;
       markIds = [
         ...markIds,
         (await denops.call(
@@ -198,13 +228,13 @@ const mountTargets = async (denops: Denops, targets: ReadonlyArray<Target>) => {
           {
             virt_text: [
               [
-                target.char.padStart(width_base_text, ' '),
+                target.char.padStart(width_base_text, " "),
                 index === 0 ? "FuzzyMotionChar" : "FuzzyMotionSubChar",
               ],
             ],
             virt_text_pos: "overlay",
             hl_mode: "combine",
-          }
+          },
         )) as number,
       ];
     } else {
@@ -218,7 +248,7 @@ const mountTargets = async (denops: Denops, targets: ReadonlyArray<Target>) => {
         {
           type: denops.name,
           id: textPropId,
-        }
+        },
       );
       popupIds = [
         ...popupIds,
@@ -242,7 +272,7 @@ const mountTargets = async (denops: Denops, targets: ReadonlyArray<Target>) => {
           "matchaddpos",
           "FuzzyMotionMatch",
           [[target.pos.line, target.pos.col + target.start, length]],
-          20
+          20,
         )) as number,
       ];
     }
@@ -258,7 +288,7 @@ export const main = async (denops: Denops): Promise<void> => {
   if (denops.meta.host === "nvim") {
     namespace = (await denops.call(
       "nvim_create_namespace",
-      "fuzzy-motion"
+      "fuzzy-motion",
     )) as number;
   } else {
     textPropId = 0;
@@ -273,7 +303,7 @@ export const main = async (denops: Denops): Promise<void> => {
 
       const labels = (await globals.get(
         denops,
-        "fuzzy_motion_labels"
+        "fuzzy_motion_labels",
       )) as Array<string>;
 
       return await getTarget({ denops, words, input, labels });
@@ -282,7 +312,7 @@ export const main = async (denops: Denops): Promise<void> => {
       const { startLine, endLine } = await getStartAndEndLine(denops);
 
       const lineNumbers = [...Array(endLine + startLine + 1)].map(
-        (_, i) => i + startLine
+        (_, i) => i + startLine,
       );
       const matchIds = await Promise.all(
         lineNumbers.map(async (lineNumber) => {
@@ -290,20 +320,20 @@ export const main = async (denops: Denops): Promise<void> => {
             "matchaddpos",
             "FuzzyMotionShade",
             [lineNumber],
-            10
+            10,
           )) as number;
-        })
+        }),
       );
 
       const words = await getWords(denops);
       const labels = (await globals.get(
         denops,
-        "fuzzy_motion_labels"
+        "fuzzy_motion_labels",
       )) as Array<string>;
 
       const autoJump = (await globals.get(
         denops,
-        "fuzzy_motion_auto_jump"
+        "fuzzy_motion_auto_jump",
       )) as boolean;
 
       try {
@@ -324,7 +354,7 @@ export const main = async (denops: Denops): Promise<void> => {
             | number
             | null;
           if (code === ENTER) {
-            code = labels[0].charCodeAt(0);
+            code = targets[0].char.charCodeAt(0);
           }
 
           if (!isNumber(code)) {
@@ -368,7 +398,7 @@ export const main = async (denops: Denops): Promise<void> => {
         await Promise.all(
           matchIds.map((id) => {
             denops.call("matchdelete", id);
-          })
+          }),
         );
 
         await unmountTargets(denops);
