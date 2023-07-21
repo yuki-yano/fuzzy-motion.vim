@@ -125,29 +125,44 @@ const getTarget = async ({
 
   let labelIndex = 0;
   const labeledTargets: Array<Target> = [];
+  const cachedLabels: Array<string> = targetCache.map((target) => target.char);
 
-  results.forEach((entry) => {
+  for (const entry of results) {
     const cachedTarget = targetCache.find(
       (cache) =>
         cache.pos.line === entry.item.pos.line &&
         cache.pos.col === entry.item.pos.col && cache.start === entry.start,
     );
 
-    const newTarget = {
-      text: entry.item.text,
-      start: entry.start,
-      end: entry.end,
-      pos: entry.item.pos,
-      score: entry.score,
-    };
-
     if (cachedTarget) {
-      labeledTargets.push({ ...newTarget, char: cachedTarget.char });
+      labeledTargets.push({
+        ...cachedTarget,
+        text: entry.item.text,
+        start: entry.start,
+        end: entry.end,
+        pos: entry.item.pos,
+        score: entry.score,
+      });
     } else if (labels != null && labelIndex < labels.length) {
-      labeledTargets.push({ ...newTarget, char: labels[labelIndex] });
-      labelIndex++;
+      while (
+        cachedLabels.includes(labels[labelIndex]) && labelIndex < labels.length
+      ) {
+        labelIndex++;
+      }
+      if (labelIndex >= labels.length) {
+        continue;
+      }
+      labeledTargets.push({
+        text: entry.item.text,
+        start: entry.start,
+        end: entry.end,
+        pos: entry.item.pos,
+        score: entry.score,
+        char: labels[labelIndex],
+      });
+      cachedLabels.push(labels[labelIndex]);
     }
-  });
+  }
 
   targetCache = labeledTargets;
   return labeledTargets;
@@ -377,8 +392,10 @@ export const main = async (denops: Denops): Promise<void> => {
               break;
             }
           } else if (code === BS || code === C_H) {
+            targetCache = [];
             input = input.slice(0, -1);
           } else if (code === C_W) {
+            targetCache = [];
             input = "";
           } else if (code >= " ".charCodeAt(0) && code <= "~".charCodeAt(0)) {
             input = `${input}${String.fromCharCode(code)}`;
