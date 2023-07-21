@@ -299,6 +299,7 @@ export const main = async (denops: Denops): Promise<void> => {
   denops.dispatcher = {
     targets: async (input: unknown): Promise<ReadonlyArray<Target>> => {
       assertString(input);
+      targetCache = [];
       const words = await getWords(denops);
 
       const labels = (await globals.get(
@@ -309,6 +310,7 @@ export const main = async (denops: Denops): Promise<void> => {
       return await getTarget({ denops, words, input, labels });
     },
     execute: async (): Promise<void> => {
+      targetCache = [];
       const { startLine, endLine } = await getStartAndEndLine(denops);
 
       const lineNumbers = [...Array(endLine + startLine + 1)].map(
