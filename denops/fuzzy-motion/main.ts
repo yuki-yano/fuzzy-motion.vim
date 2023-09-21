@@ -371,6 +371,9 @@ export const main = async (denops: Denops): Promise<void> => {
             | number
             | null;
           if (code === ENTER) {
+            if (targets.length === 0) {
+              return;
+            }
             code = targets[0].char.charCodeAt(0);
           }
 
