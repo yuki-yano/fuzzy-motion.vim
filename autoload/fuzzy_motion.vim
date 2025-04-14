@@ -8,3 +8,11 @@ endfunction
 function! fuzzy_motion#targets(q) abort
   return denops#request('fuzzy-motion', 'targets', [a:q])
 endfunction
+
+function! fuzzy_motion#_getchar() abort
+  let l:code = getchar()
+  if type(l:code) == v:t_string
+    let l:code = char2nr(l:code)
+  endif
+  return l:code
+endfunction

@@ -1,6 +1,7 @@
 import type { Denops } from "./mod.ts";
-import { assertString, Buffer } from "./mod.ts";
+import { assert, is } from "./mod.ts";
 import type { Result, Word } from "./types.ts";
+import { Buffer } from "node:buffer";
 
 const KENSAKU_SCORE = 1;
 
@@ -18,7 +19,7 @@ export const getKensakuResults = async ({
   }
 
   const kensakuQuery = await denops.dispatch("kensaku", "query", input);
-  assertString(kensakuQuery);
+  assert(kensakuQuery, is.String);
   const kensakuPattern = new RegExp(kensakuQuery, "g");
   const search = (word: Word) => kensakuPattern.exec(word.text);
 
